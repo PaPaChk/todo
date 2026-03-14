@@ -28,6 +28,21 @@ function getDaysLeft(dueDate) {
   return Math.ceil((parsedDate - today) / (1000 * 60 * 60 * 24));
 }
 
+function compareDaysLeft(taskA, taskB) {
+  const daysLeftA = getDaysLeft(taskA.dueDate);
+  const daysLeftB = getDaysLeft(taskB.dueDate);
+
+  if (daysLeftA === null && daysLeftB === null) return 0;
+  if (daysLeftA === null) return 1;
+  if (daysLeftB === null) return -1;
+
+  return daysLeftA - daysLeftB;
+}
+
+function comparePriority(taskA, taskB) {
+  return PRIORITY_ORDER[taskA.priority] - PRIORITY_ORDER[taskB.priority];
+}
+
 function App() {
   const [tasks, setTasks] = useState(readStoredTasks);
   const [input, setInput] = useState("");
@@ -35,6 +50,7 @@ function App() {
   const [priority, setPriority] = useState("none");
   const [sortBy, setSortBy] = useState("daysLeft");
   const [sortDirection, setSortDirection] = useState("asc");
+  const [secondSortDirection, setSecondSortDirection] = useState("asc");
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
@@ -65,23 +81,22 @@ function App() {
     );
   };
 
+  const secondarySortBy = sortBy === "daysLeft" ? "priority" : "daysLeft";
+
   const sortedTasks = [...tasks].sort((taskA, taskB) => {
-    const direction = sortDirection === "asc" ? 1 : -1;
+    const primaryDirection = sortDirection === "asc" ? 1 : -1;
+    const secondaryDirection = secondSortDirection === "asc" ? 1 : -1;
+    const comparePrimary = sortBy === "daysLeft" ? compareDaysLeft : comparePriority;
+    const compareSecondary =
+      secondarySortBy === "daysLeft" ? compareDaysLeft : comparePriority;
 
-    if (sortBy === "priority") {
-      return (
-        (PRIORITY_ORDER[taskA.priority] - PRIORITY_ORDER[taskB.priority]) * direction
-      );
-    }
+    const primaryResult = comparePrimary(taskA, taskB) * primaryDirection;
+    if (primaryResult !== 0) return primaryResult;
 
-    const daysLeftA = getDaysLeft(taskA.dueDate);
-    const daysLeftB = getDaysLeft(taskB.dueDate);
+    const secondaryResult = compareSecondary(taskA, taskB) * secondaryDirection;
+    if (secondaryResult !== 0) return secondaryResult;
 
-    if (daysLeftA === null && daysLeftB === null) return 0;
-    if (daysLeftA === null) return 1;
-    if (daysLeftB === null) return -1;
-
-    return (daysLeftA - daysLeftB) * direction;
+    return taskA.text.localeCompare(taskB.text);
   });
 
   function readStoredTasks() {
@@ -155,22 +170,46 @@ function App() {
       <br></br>
 
       <div>
-        <span>Sort by</span>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-          <option value="daysLeft">Days left</option>
-          <option value="priority">Priority</option>
-        </select>
+        <div>
+          <span>Sorting by</span>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="daysLeft">Days left</option>
+            <option value="priority">Priority</option>
+          </select>
+          <span>in</span>
+          <button
+            type="button"
+            onClick={() =>
+              setSortDirection((currentDirection) =>
+                currentDirection === "asc" ? "desc" : "asc"
+              )
+            }
+          >
+            {sortDirection === "asc" ? "ascending" : "descending"}
+          </button>
+          <span>order, then</span>
+        </div>
 
-        <button
-          type="button"
-          onClick={() =>
-            setSortDirection((currentDirection) =>
-              currentDirection === "asc" ? "desc" : "asc"
-            )
-          }
-        >
-          {sortDirection === "asc" ? "Ascending" : "Descending"}
-        </button>
+        <div>
+          <span>sorting by</span>
+          <select value={secondarySortBy} disabled>
+            <option value={secondarySortBy}>
+              {secondarySortBy === "daysLeft" ? "Days left" : "Priority"}
+            </option>
+          </select>
+          <span>in</span>
+          <button
+            type="button"
+            onClick={() =>
+              setSecondSortDirection((currentDirection) =>
+                currentDirection === "asc" ? "desc" : "asc"
+              )
+            }
+          >
+            {secondSortDirection === "asc" ? "ascending" : "descending"}
+          </button>
+          <span>order</span>
+        </div>
       </div>
 
       <br></br>
