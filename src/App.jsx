@@ -1,4 +1,23 @@
 import { useState, useEffect } from "react";
+import {
+  Box,
+  Button,
+  Checkbox,
+  Container,
+  CssBaseline,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from "@mui/material";
 
 const STORAGE_KEY = "todo-tasks";
 const PRIORITY_ORDER = {
@@ -43,6 +62,20 @@ function comparePriority(taskA, taskB) {
   return PRIORITY_ORDER[taskA.priority] - PRIORITY_ORDER[taskB.priority];
 }
 
+function getSortLabel(sortValue) {
+  return sortValue === "daysLeft" ? "Days left" : "Priority";
+}
+
+function getDaysLeftDisplay(task) {
+  const daysLeft = getDaysLeft(task.dueDate);
+
+  if (task.completed) return "Completed";
+  if (daysLeft === null) return "N/A";
+  if (!task.completed && daysLeft < 0) return `Overdue for ${Math.abs(daysLeft)} days`;
+
+  return daysLeft;
+}
+
 function App() {
   const [tasks, setTasks] = useState(readStoredTasks);
   const [input, setInput] = useState("");
@@ -84,6 +117,10 @@ function App() {
   const secondarySortBy = sortBy === "daysLeft" ? "priority" : "daysLeft";
 
   const sortedTasks = [...tasks].sort((taskA, taskB) => {
+    if (taskA.completed !== taskB.completed) {
+      return taskA.completed ? 1 : -1;
+    }
+
     const primaryDirection = sortDirection === "asc" ? 1 : -1;
     const secondaryDirection = secondSortDirection === "asc" ? 1 : -1;
     const comparePrimary = sortBy === "daysLeft" ? compareDaysLeft : comparePriority;
@@ -119,136 +156,202 @@ function App() {
   }
 
   return (
-    <div>
-      <h1>Todo List</h1>
+    <>
+      <CssBaseline />
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: "linear-gradient(180deg, #f7f4ee 0%, #efe8db 100%)",
+          py: { xs: 4, md: 6 },
+        }}
+      >
+        <Container maxWidth="lg">
+          <Stack spacing={3}>
+            <Typography
+              component="h1"
+              variant="h3"
+              sx={{ fontWeight: 700, color: "#2f2a24", letterSpacing: "0.02em" }}
+            >
+              Todo List
+            </Typography>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Task name</th>
-            <th>Due date</th>
-            <th>Priority</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              {/* Task Name Input*/}
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter task name here"
-              />
-            </td>
-            <td>
-              {/* Due Date Input */}
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </td>
-            <td>
-              {/* Priority Input */}
-              <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-                <option value="none">None</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </td>
-            <td>
-              {/* Add Button */}
-              <button onClick={addTask}>Add</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 3 }}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#f1e7d0" }}>
+                    <TableCell sx={{ fontWeight: 700 }}>Task name</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Due date</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Priority</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow hover>
+                    <TableCell>
+                      <TextField
+                        fullWidth
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Enter task name here"
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        fullWidth
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        fullWidth
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value)}
+                        size="small"
+                      >
+                        <MenuItem value="none">None</MenuItem>
+                        <MenuItem value="low">Low</MenuItem>
+                        <MenuItem value="medium">Medium</MenuItem>
+                        <MenuItem value="high">High</MenuItem>
+                      </Select>
+                    </TableCell>
+                    <TableCell sx={{ width: 120 }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={addTask}
+                        sx={{ backgroundColor: "#556b2f" }}
+                      >
+                        Add
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-      <br></br>
+            <Paper elevation={2} sx={{ borderRadius: 3, px: 3, py: 2.5 }}>
+              <Stack spacing={1.5}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
+                  <Typography sx={{ color: "#4a4339" }}>Sorting by</Typography>
+                  <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)} size="small">
+                    <MenuItem value="daysLeft">Days left</MenuItem>
+                    <MenuItem value="priority">Priority</MenuItem>
+                  </Select>
+                  <Typography sx={{ color: "#4a4339" }}>in</Typography>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={() =>
+                      setSortDirection((currentDirection) =>
+                        currentDirection === "asc" ? "desc" : "asc"
+                      )
+                    }
+                    sx={{ width: { xs: "100%", md: "auto" } }}
+                  >
+                    {sortDirection === "asc" ? "ascending" : "descending"}
+                  </Button>
+                  <Typography sx={{ color: "#4a4339" }}>order, then</Typography>
+                </Stack>
 
-      <div>
-        <div>
-          <span>Sorting by</span>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="daysLeft">Days left</option>
-            <option value="priority">Priority</option>
-          </select>
-          <span>in</span>
-          <button
-            type="button"
-            onClick={() =>
-              setSortDirection((currentDirection) =>
-                currentDirection === "asc" ? "desc" : "asc"
-              )
-            }
-          >
-            {sortDirection === "asc" ? "ascending" : "descending"}
-          </button>
-          <span>order, then</span>
-        </div>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
+                  <Typography sx={{ color: "#4a4339" }}>sorting by</Typography>
+                  <Select value={secondarySortBy} disabled size="small">
+                    <MenuItem value={secondarySortBy}>{getSortLabel(secondarySortBy)}</MenuItem>
+                  </Select>
+                  <Typography sx={{ color: "#4a4339" }}>in</Typography>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={() =>
+                      setSecondSortDirection((currentDirection) =>
+                        currentDirection === "asc" ? "desc" : "asc"
+                      )
+                    }
+                    sx={{ width: { xs: "100%", md: "auto" } }}
+                  >
+                    {secondSortDirection === "asc" ? "ascending" : "descending"}
+                  </Button>
+                  <Typography sx={{ color: "#4a4339" }}>order</Typography>
+                </Stack>
+              </Stack>
+            </Paper>
 
-        <div>
-          <span>sorting by</span>
-          <select value={secondarySortBy} disabled>
-            <option value={secondarySortBy}>
-              {secondarySortBy === "daysLeft" ? "Days left" : "Priority"}
-            </option>
-          </select>
-          <span>in</span>
-          <button
-            type="button"
-            onClick={() =>
-              setSecondSortDirection((currentDirection) =>
-                currentDirection === "asc" ? "desc" : "asc"
-              )
-            }
-          >
-            {secondSortDirection === "asc" ? "ascending" : "descending"}
-          </button>
-          <span>order</span>
-        </div>
-      </div>
+            <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 3 }}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#f1e7d0" }}>
+                    <TableCell sx={{ fontWeight: 700 }}>Task</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>
+                      Days left
+                    </TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>
+                      Priority
+                    </TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>
+                      Completed
+                    </TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>
+                      Action
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
 
-      <br></br>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Task</th>
-            <th>Days left</th>
-            <th>Priority</th>
-            <th>Completed</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {sortedTasks.map((task) => {
-            const daysLeft = getDaysLeft(task.dueDate);
-            return (
-              <tr key={task.id}>
-                <td align="center">{task.text}</td>
-                <td align="center">{daysLeft ?? "N/A"}</td>
-                <td align="center">{task.priority}</td>
-                <td align="center">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => toggleTask(task.id)}
-                  />
-                </td>
-                <td align="center">
-                  <button onClick={() => deleteTask(task.id)}>Delete</button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                <TableBody>
+                  {sortedTasks.map((task) => {
+                    const isCompleted = task.completed;
+                    return (
+                      <TableRow
+                        key={task.id}
+                        hover
+                        sx={
+                          isCompleted
+                            ? {
+                                backgroundColor: "#f0f0f0",
+                                "& td": {
+                                  color: "text.disabled",
+                                },
+                              }
+                            : undefined
+                        }
+                      >
+                        <TableCell sx={isCompleted ? { textDecoration: "line-through" } : undefined}>
+                          {task.text}
+                        </TableCell>
+                        <TableCell align="center">{getDaysLeftDisplay(task)}</TableCell>
+                        <TableCell align="center" sx={{ textTransform: "capitalize" }}>
+                          {task.priority}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Checkbox
+                            checked={task.completed}
+                            onChange={() => toggleTask(task.id)}
+                            color="success"
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            onClick={() => deleteTask(task.id)}
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Stack>
+        </Container>
+      </Box>
+    </>
   )
 }
 
